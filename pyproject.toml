@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "elastolink"
+version = "0.0.2"
+authors = [
+    { name = "Neo", email = "netkiller@msn.com" },
+]
+description = "Elastolink CLI"
+readme = "README.md"
+requires-python = ">=3.14"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+dependencies = [
+    "httpx",
+    "tqdm",
+    "texttable"
+]
+
+[project.urls]
+Homepage = "https://github.com/elastolink/elastolink-cli"
+Issues = "https://github.com/elastolink/elastolink-cli/issues"
+
+[project.scripts]
+elastolink = "netkiller.elastolink:main"
+elastolink-cli = "netkiller.elastolink:main"
