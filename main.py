@@ -63,27 +63,19 @@ async def status(ctx: Context=Context()) -> TextContent:
     return TextContent(type="text", text=str(r.json()))
 
 @mcp.tool(title="会议列表",description="列出所有历史会议")
-async def lists(ctx: Context=Context()) -> TextContent:
+async def lists(ctx: Context=Context()) -> list:
     """获取会议列表"""
     r = await call_api("agent/meeting/list",ctx=ctx)
-    data = r.json()
+    if r.status_code != 200 or not r.json():
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    data = [{k: v for k, v in item.items() if k != "content"} for item in r.json()]
+
+    print(data)
+
     if not data:
         return TextContent(type="text", text="暂无会议数据")
 
-    lines = []
-    lines.append(f"{'会议ID':<38} {'会议标题':<20} {'会议时长':<10} {'会议语言':<8} {'会议日期':<12}")
-    lines.append("-" * 90)
-    for item in data:
-        meeting_id = item.get("id", "")
-        title = item.get("title", "")[:18]
-        duration = item.get("duration", "") or "-"
-        language = item.get("language", "") or "-"
-        ctime_str = item.get("ctime", "")
-        ctime = ctime_str[:10] if ctime_str else "-"
-        lines.append(f"{meeting_id:<38} {title:<20} {duration:<10} {language:<8} {ctime:<12}")
-    lines.append(f"\n共 {len(data)} 条会议")
-
-    return TextContent(type="text", text="\n".join(lines))
+    return data
 
 
 @mcp.tool(title="会议内容",description="通过 <会议ID> 查看会议内容")
@@ -93,13 +85,13 @@ async def detail(meeting_id: str,ctx: Context=Context()) -> TextContent:
     return TextContent(type="text", text=r.text)
 
 
-@mcp.tool(title="会议Markdown原文",description="会议输出文档")
+@mcp.tool(title="会议Markdown原文",description="通过 <会议ID> 获取会议输出文档")
 async def markdown(meeting_id: str,ctx: Context=Context()) -> TextContent:
     """获取会议 Markdown 文件"""
     r = await call_api(f"agent/document/markdown?id={meeting_id}",ctx=ctx)
     return TextContent(type="text", text=r.text)
 
-@mcp.tool(title="会议Office文档",description="下载Office格式的输出文档")
+@mcp.tool(title="会议Office文档",description="通过 <会议ID> 下载Office格式的输出文档")
 async def office(meeting_id: str,ctx: Context=Context())->Dict[str, str]:
     """获取会议 Office 文档下载链接"""
     r = await call_api(f"agent/document/office?id={meeting_id}",ctx=ctx)
