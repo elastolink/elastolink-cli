@@ -150,6 +150,20 @@ export ELASTOLINK_API_KEY=sk-02172F38-776D-4F5F-88D3-EAC0F87E445B
 小龙虾：昨天的会议，发言人1是李副总，你认为他的方案可行吗？
 ```
 
+# Elastolink MCP
+
+```shell
+claude mcp add --transport http --header "Authorization: Bearer sk-02172F38-776D-4F5F-88D3-EAC0F87E445B" elastolink https://dev.ideasprite.com/mcp
+
+neo@Mac tmp % claude mcp list
+Checking MCP server health...
+
+pencil: /Applications/Pencil.app/Contents/Resources/app.asar.unpacked/out/mcp-server-darwin-arm64 --app desktop - ✓ Connected
+elastolink: https://dev.ideasprite.com/mcp (HTTP) - ✓ Connected
+```
+
+
+
 ## 开发环境安装
 
 ```shell
