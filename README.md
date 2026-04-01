@@ -11,7 +11,7 @@ pip install elastolink
 ## Help
 
 ```shell
-(.venv) neo@Mac elastolink % python elastolink-cli.py   
+(.venv) neo@Mac elastolink % elastolink-cli   
 usage: elastolink-cli.py [-h] [-l] [-d <会议ID>] [-m <会议ID>] [-o <会议ID>] [-s <关键词>] [-k <API KEY>] [--status] [--verbose]
 
 Elastolink Command Line Interface
@@ -32,14 +32,14 @@ options:
 请先在小程序后台，用户中心生成 API KEY 
 
 ```shell
-(.venv) neo@Mac elastolink % python elastolink-cli.py -k sk-02172F38-776D-4F5F-88D3-EAC0F87E445B
+(.venv) neo@Mac elastolink % elastolink-cli -k sk-02172F38-776D-4F5F-88D3-EAC0F87E445B
 
 ```
 
 ## 会议列表
 
 ```shell
-(.venv) neo@Mac elastolink % python elastolink-cli.py -l
+(.venv) neo@Mac elastolink % elastolink-cli -l
 
 +----------------------------------------+----------------------+------------+----------+--------------+
 |                 会议ID                 |       会议标题       |  会议时长  | 会议语言 |   会议日期   |
@@ -61,7 +61,7 @@ options:
 ## 查看会议
 
 ```shell
-(.venv) neo@Mac elastolink % python elastolink-cli.py -d a5a574f7b7d34cfd8a9b564670ef354b
+(.venv) neo@Mac elastolink % elastolink-cli -d a5a574f7b7d34cfd8a9b564670ef354b
 会议主题：PodcastEnglishLearningTips
 会议时间：2026-03-25T14:32:32
 会议时长：01:56:52
@@ -86,7 +86,7 @@ options:
 ## 查看 Mardown 文档
 
 ```shell
-(.venv) neo@Mac elastolink % python elastolink-cli.py -m a5a574f7b7d34cfd8a9b564670ef354b | head -n 10
+(.venv) neo@Mac elastolink % elastolink-cli -m a5a574f7b7d34cfd8a9b564670ef354b | head -n 10
 ----- 鱼骨图 (开始)-----
 - 缺乏对不同家庭具体使用场景的明确理解
   - 销售人员与潜在客户的初步沟通不足，未能全面收集家庭日常通勤距离、长途旅行频率、载客与载物需求等关键信息。
@@ -102,7 +102,7 @@ options:
 ## 下载 Office 文档
 
 ```shell
-(.venv) neo@Mac elastolink % python elastolink-cli.py -o a5a574f7b7d34cfd8a9b564670ef354b            
+(.venv) neo@Mac elastolink % elastolink-cli -o a5a574f7b7d34cfd8a9b564670ef354b            
 ----- Office 文档列表 -----
 "思维导图":http://elastolink-document.oss-cn-shenzhen.aliyuncs.com/development/aigcsst/25321561854178/2026-03-25/a5a574f7b7d34cfd8a9b564670ef354b/PodcastEnglishLearningTips%28mindmap%29.svg?Expires=1775017938&OSSAccessKeyId=LTAI5tPrqH1c1FVWfJxvrafY&Signature=Nw8czjwh3t53Slm%2Fyt174lhaiN0%3D
 "幻灯片":http://elastolink-document.oss-cn-shenzhen.aliyuncs.com/development/2026-03-25/a5a574f7b7d34cfd8a9b564670ef354b/PodcastEnglishLearningTips_20260325_093221.pptx?Expires=1775017938&OSSAccessKeyId=LTAI5tPrqH1c1FVWfJxvrafY&Signature=L3%2BXDghHtixR%2FLzB1d3RG5%2FSN4M%3D
@@ -118,14 +118,14 @@ options:
 ## 查看设备状态
 
 ```shell
-(.venv) neo@Mac elastolink % python elastolink-cli.py --status
+(.venv) neo@Mac elastolink % elastolink-cli --status
 {'expired': 'xxxxxx', 'status': '激活'}
 ```
 
 ## 集成 Openclaw 小龙虾
 
 ```shell
-(.venv) neo@Mac elastolink % python elastolink-cli.py -k sk-02172F38-776D-4F5F-88D3-EAC0F87E445B
+(.venv) neo@Mac elastolink % elastolink-cli -k sk-02172F38-776D-4F5F-88D3-EAC0F87E445B
 
 ```
 
