@@ -6,10 +6,10 @@
 # Upgrade: 2026-03-30
 # Description: Elastolink command line interface
 ###################################################
-import asyncio
-import httpx
-
 try:
+    import asyncio
+    import logging
+    import httpx
     import uuid,hashlib
     import glob
     import shutil
@@ -45,11 +45,22 @@ class Elastolink():
         self.parser.add_argument('-s','--search', type=str, default=None, help='会议搜索', metavar="<关键词>")
         self.parser.add_argument('-k', '--key', type=str, default=None, help='设置 API KEY', metavar="<API KEY>")
         self.parser.add_argument('--status', action="store_true", default=False, help='设备状态')
-        # self.parser.add_argument('--verbose', action="store_true", default=False, help='过程输出')
+        self.parser.add_argument('-v','--verbose', action="store_true", default=False, help='过程输出')
 
         self.args = self.parser.parse_args()
 
-    def getenv(self):
+        if self.args.verbose:
+            level = logging.INFO
+        else:
+            level = logging.ERROR
+
+        logging.basicConfig(
+                format='%(asctime)s %(name)s %(levelname)s %(message)s - %(filename)s:%(lineno)d',
+                level=level
+            )
+        self.log = logging.getLogger(__class__.__name__)
+
+    def headers(self):
         api_key = os.getenv("ELASTOLINK_API_KEY")
         if not api_key:
             try:
@@ -57,11 +68,13 @@ class Elastolink():
                     api_key = file.readline()
                     if not api_key:
                         print(f"请配置 ELASTOLINK_API_KEY 环境变量")
+                    self.log.warning(f"==={api_key}===")
             except Exception as e:
                 print(e)
                 exit()
-            return api_key
-        return api_key
+        self.log.info(f"ELASTOLINK_API={self.base_url}")
+        self.log.info(f"ELASTOLINK_API_KEY={api_key}")
+        return  {"Authorization": f"Bearer {api_key}"}
     def setenv(self,sk):
         try:
             with open(self.config, "w") as file:
@@ -75,10 +88,8 @@ class Elastolink():
             exit()
 
     async def status(self):
-
         try:
-            self.headers = {"Authorization": f"Bearer {self.getenv()}"}
-            async with httpx.AsyncClient(base_url=self.base_url,headers=self.headers) as client:
+            async with httpx.AsyncClient(base_url=self.base_url,headers=self.headers()) as client:
                 r = await client.get("agent/cli/device/status")
                 print(r.json())
         except Exception as e:
@@ -89,12 +100,15 @@ class Elastolink():
 
     async def list(self):
         try:
-            self.headers = {"Authorization": f"Bearer {self.getenv()}"}
-            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers, timeout=30.0) as client:
+            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
                 # 用 tqdm 显示加载状态
                 # for _ in tqdm(range(1), ncols=20, desc="加载中"):
-                r = await client.get("agent/cli/meeting/list")
-                data = r.json()
+                response = await client.get("agent/cli/meeting/list")
+                if response.status_code != 200:
+                    self.log.warning(f"{response.status_code}, {response.text}")
+                    return
+
+                data = response.json()
 
                 if not data:
                     print("暂无会议数据")
@@ -104,18 +118,24 @@ class Elastolink():
 
                 table = Texttable()
                 table.header(["会议ID", "会议标题", "会议时长", "会议语言", "会议日期"])
-                table.set_cols_width([38, 20, 10, 8, 12])
+                table.set_cols_width([36, 80, 8, 8, 19])
 
                 for item in data:
                     meeting_id = item.get("id", "")
-                    title = item.get("title", "")[:18]
+                    title = item.get("title", "")
                     duration = item.get("duration", "") or "-"
                     language = item.get("language", "") or "-"
-                    ctime_str = item.get("ctime", "")
-                    ctime = ctime_str[:10] if ctime_str else "-"
+                    ctime = item.get("ctime", "").replace("T", " ")
+                    # ctime = ctime_str[:10] if ctime_str else "-"
                     table.add_row([meeting_id, title, duration, language, ctime])
-
-                print(f"\n{table.draw()}")
+                print(r"""
+  _____   _            _   _       _       _
+ | ____| | |   ___  __| | | | ___ | | __ _| | __
+ |  _|   | |  / _ \/ _` | | |/ _ \| |/ _` | |/ /
+ | |___  | | |  __/ (_| | | | (_) | | (_| |   <
+ |_____| |_|  \___|\__,_| |_|\___/|_|\__,_|_|\_\                
+                """)
+                print(f"{table.draw()}")
                 print(f"\n共 {len(data)} 条会议")
                 print("-" * 80)
                 print(f"您可以使用 elastolink-cli -d <会议ID> 查看会议内容")
@@ -124,8 +144,7 @@ class Elastolink():
 
     async def detail(self, meeting_id: str):
         try:
-            self.headers = {"Authorization": f"Bearer {self.getenv()}"}
-            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers, timeout=30.0) as client:
+            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
                 r = await client.get(f"agent/cli/meeting/detail?id={meeting_id}")
                 content = r.text
 
@@ -139,8 +158,8 @@ class Elastolink():
 
     async def markdown(self, meeting_id: str):
         try:
-            self.headers = {"Authorization": f"Bearer {self.getenv()}"}
-            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers, timeout=30.0) as client:
+
+            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
                 r = await client.get(f"agent/cli/document/markdown?id={meeting_id}")
                 content = r.text
 
@@ -154,8 +173,8 @@ class Elastolink():
 
     async def office(self, meeting_id: str):
         try:
-            self.headers = {"Authorization": f"Bearer {self.getenv()}"}
-            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers, timeout=30.0) as client:
+
+            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
                 r = await client.get(f"agent/cli/document/office?id={meeting_id}")
                 content = r.text
 
@@ -167,7 +186,7 @@ class Elastolink():
         except Exception as e:
             print(f"获取 Office 文档失败: {e}")
     def search(self,path):
-        self.headers = {"Authorization": f"Bearer {self.getenv()}"}
+        self.headers = {"Authorization": f"Bearer {self.headers()}"}
         print("还未开放")
         pass
 

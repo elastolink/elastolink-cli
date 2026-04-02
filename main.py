@@ -6,6 +6,7 @@
 # Upgrade: 2026-03-31
 # Description: Elastolink MCP Server (HTTP)
 ###################################################
+import logging
 import os
 from typing import Dict
 
@@ -14,13 +15,18 @@ from mcp.server.fastmcp import FastMCP, Context
 from mcp.types import TextContent, Request
 from starlette.exceptions import HTTPException
 
+logging.basicConfig(
+    format='%(asctime)s %(name)s %(levelname)s %(message)s - %(filename)s:%(lineno)d',
+    level=logging.INFO
+)
+# self.log = logging.getLogger(__class__.__name__)
+
 host = os.environ.get('MCP_HOST', '0.0.0.0')
 port = int(os.environ.get('MCP_PORT', '8000'))
 
 # Create an MCP server
 mcp = FastMCP("Elastolink MCP Server",host=host,port=port, json_response=True)
 
-config = os.path.expanduser("~/.elastolink")
 base_url = os.environ.get('ELASTOLINK_API', 'https://api.ideasprite.com')
 
 # Add a dynamic greeting resource
@@ -77,6 +83,20 @@ async def lists(ctx: Context=Context()) -> list:
 
     return data
 
+@mcp.tool(title="会议列表",description="列出所有历史会议")
+async def lists(ctx: Context=Context()) -> list:
+    """获取会议列表"""
+    r = await call_api("agent/meeting/list",ctx=ctx)
+    if r.status_code != 200 or not r.json():
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    data = [{k: v for k, v in item.items() if k != "content"} for item in r.json()]
+
+    print(data)
+
+    if not data:
+        return TextContent(type="text", text="暂无会议数据")
+
+    return data
 
 @mcp.tool(title="会议内容",description="通过 <会议ID> 查看会议内容")
 async def detail(meeting_id: str,ctx: Context=Context()) -> TextContent:
