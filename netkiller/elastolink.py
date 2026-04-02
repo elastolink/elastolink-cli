@@ -90,8 +90,12 @@ class Elastolink():
     async def status(self):
         try:
             async with httpx.AsyncClient(base_url=self.base_url,headers=self.headers()) as client:
-                r = await client.get("agent/cli/device/status")
-                print(r.json())
+                response = await client.get("agent/cli/device/status")
+                if response.status_code != 200:
+                    self.log.warning(f"{response.status_code}, {response.text}")
+                    return
+
+                print(response.json())
         except Exception as e:
             # log.error(e)
             print("status: ",e)
@@ -145,8 +149,12 @@ class Elastolink():
     async def detail(self, meeting_id: str):
         try:
             async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
-                r = await client.get(f"agent/cli/meeting/detail?id={meeting_id}")
-                content = r.text
+                response = await client.get(f"agent/cli/meeting/detail?id={meeting_id}")
+                if response.status_code != 200:
+                    self.log.warning(f"{response.status_code}, {response.text}")
+                    return
+
+                content = response.text
 
                 if not content:
                     print("暂无会议详情")
@@ -160,8 +168,12 @@ class Elastolink():
         try:
 
             async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
-                r = await client.get(f"agent/cli/document/markdown?id={meeting_id}")
-                content = r.text
+                response = await client.get(f"agent/cli/document/markdown?id={meeting_id}")
+                if response.status_code != 200:
+                    self.log.warning(f"{response.status_code}, {response.text}")
+                    return
+
+                content = response.text
 
                 if not content:
                     print("暂无 Markdown 内容")
@@ -175,8 +187,12 @@ class Elastolink():
         try:
 
             async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
-                r = await client.get(f"agent/cli/document/office?id={meeting_id}")
-                content = r.text
+                response = await client.get(f"agent/cli/document/office?id={meeting_id}")
+                if response.status_code != 200:
+                    self.log.warning(f"{response.status_code}, {response.text}")
+                    return
+
+                content = response.text
 
                 if not content:
                     print("暂无 Office 文档")
