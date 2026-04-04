@@ -11,20 +11,33 @@ pip install elastolink
 ## Help
 
 ```shell
-(.venv) neo@Mac elastolink % elastolink-cli   
-usage: elastolink-cli.py [-h] [-l] [-d <会议ID>] [-m <会议ID>] [-o <会议ID>] [-s <关键词>] [-k <API KEY>] [--status] [--verbose]
+(.venv) neo@Mac ~ % elastolink-cli                                    
+usage: elastolink.py [-h] [-k <API KEY>] [--status] [-v] [-l] [-d <会议ID>] [-t] [-w] [--month] [--quarterly] [--year]
+                     [-s <关键词>] [-m <会议ID>] [-o <会议ID>]
 
-Elastolink Command Line Interface
+Elastolink Command Line Interface (魔簧智脑命令行接口)
 
 options:
   -h, --help             show this help message and exit
-  -l, --list             会议列表
-  -d, --detail <会议ID>    查看会议内容
-  -m, --markdown <会议ID>  会议 Markdown 文件
-  -o, --office <会议ID>    下载 Office 会议文档
-  -s, --search <关键词>     会议搜索
   -k, --key <API KEY>    设置 API KEY
   --status               设备状态
+  -v, --verbose          过程输出
+
+会议管理:
+  -l, --list             会议列表
+  -d, --detail <会议ID>    查看会议内容
+  -t, --today            今天会议列表
+  -w, --week             本周会议列表
+  --month                本月会议列表
+  --quarterly            本季度会议列表（暂未开放）
+  --year                 本年度周会议列表（暂未开放）
+  -s, --search <关键词>     会议内容搜索
+
+文档管理:
+  -m, --markdown <会议ID>  会议 Markdown 文档
+  -o, --office <会议ID>    下载 Office 会议文档
+
+https://pypi.org/project/elastolink/
 ```
 
 ## 设置 API KEY
@@ -160,15 +173,4 @@ Checking MCP server health...
 
 pencil: /Applications/Pencil.app/Contents/Resources/app.asar.unpacked/out/mcp-server-darwin-arm64 --app desktop - ✓ Connected
 elastolink: https://dev.ideasprite.com/mcp (HTTP) - ✓ Connected
-```
-
-
-
-## 开发环境安装
-
-```shell
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-pip install build twine
-python -m build
-twine upload dist/elastolink-0.0.2*
 ```

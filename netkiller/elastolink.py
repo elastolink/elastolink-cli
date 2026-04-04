@@ -36,16 +36,37 @@ class Elastolink():
         sys.path.append(self.basedir)
         # print(basedir)
 
-        self.parser = argparse.ArgumentParser(description='Elastolink Command Line Interface', color=True,
-                                              formatter_class=lambda prog: argparse.HelpFormatter(prog, indent_increment=2,max_help_position=30, width=120))
-        self.parser.add_argument('-l','--list', action="store_true", default=False, help='会议列表')
-        self.parser.add_argument('-d','--detail', type=str, default=None, help='查看会议内容', metavar="<会议ID>")
-        self.parser.add_argument('-m','--markdown', type=str, default=None, help='会议 Markdown 文件', metavar="<会议ID>")
-        self.parser.add_argument('-o','--office', default=None, type=str, help='下载 Office 会议文档',metavar="<会议ID>")
-        self.parser.add_argument('-s','--search', type=str, default=None, help='会议搜索', metavar="<关键词>")
+        self.parser = argparse.ArgumentParser(description='Elastolink Command Line Interface (魔簧智脑命令行接口)', color=True,
+                                              formatter_class=lambda prog: argparse.HelpFormatter(prog, indent_increment=2,max_help_position=30, width=120),
+                                                epilog = "https://pypi.org/project/elastolink/")
         self.parser.add_argument('-k', '--key', type=str, default=None, help='设置 API KEY', metavar="<API KEY>")
         self.parser.add_argument('--status', action="store_true", default=False, help='设备状态')
         self.parser.add_argument('-v','--verbose', action="store_true", default=False, help='过程输出')
+
+        group1 = self.parser.add_argument_group("会议管理")
+        group2 = self.parser.add_argument_group("文档管理")
+        # group3 = self.parser.add_argument_group("数据库设置")
+
+        group1.add_argument('-l', '--list', action="store_true", default=False, help='会议列表')
+        group1.add_argument('-d', '--detail', type=str, default=None, help='查看会议内容', metavar="<会议ID>")
+        group1.add_argument('-t','--today', required=False, default=False,action="store_true",help="今天会议列表")
+        group1.add_argument('-w',"--week", required=False, default=False,action="store_true",help="本周会议列表")
+        group1.add_argument( "--month", required=False, default=False,action="store_true",help="本月会议列表")
+        group1.add_argument( "--quarterly", required=False, default=False,action="store_true",help="本季度会议列表（暂未开放）")
+        group1.add_argument("--year", required=False, default=False,action="store_true",help="本年度周会议列表（暂未开放）")
+        group1.add_argument('-s', '--search', type=str, default=None, help='会议内容搜索', metavar="<关键词>")
+
+        group2.add_argument('-m', '--markdown', type=str, default=None, help='会议 Markdown 文档', metavar="<会议ID>")
+        group2.add_argument('-o', '--office', default=None, type=str, help='下载 Office 会议文档', metavar="<会议ID>")
+        # group2.add_argument('--todolist', default=None, type=str, help='下会议代办事项(暂未开放)', metavar="<会议ID>")
+        # group2.add_argument( '--mindmap', default=None, type=str, help='会议思维导图', metavar="<会议ID>")
+        # group2.add_argument( '--fishbone', default=None, type=str, help='会议鱼骨图', metavar="<会议ID>")
+
+
+        # self.parser.usage = """
+        # 使用方法:
+        #   %(prog)s [选项]
+        # """
 
         self.args = self.parser.parse_args()
 
@@ -87,118 +108,121 @@ class Elastolink():
             print("input: ", e)
             exit()
 
-    async def status(self):
-        try:
-            async with httpx.AsyncClient(base_url=self.base_url,headers=self.headers()) as client:
-                response = await client.get("agent/cli/device/status")
-                if response.status_code != 200:
-                    self.log.warning(f"{response.status_code}, {response.text}")
-                    return
-
-                print(response.json())
-        except Exception as e:
-            # log.error(e)
-            print("status: ",e)
-            exit()
-        return None
-
-    async def list(self):
+    async def call(self,uri:str):
         try:
             async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
                 # 用 tqdm 显示加载状态
                 # for _ in tqdm(range(1), ncols=20, desc="加载中"):
-                response = await client.get("agent/cli/meeting/list")
+                response = await client.get(uri)
                 if response.status_code != 200:
                     self.log.warning(f"{response.status_code}, {response.text}")
-                    return
+                    sys.exit(1)
+                return response;
+        except httpx.HTTPError as e:
+            print(e,self.base_url)
+            sys.exit(1)
+        except httpx.TimeoutException as e:
+            print(e,self.base_url+uri)
+            sys.exit(1)
+        except Exception as e:
+            print(e)
+            self.log.warning(e)
+            sys.exit(1)
 
-                data = response.json()
 
-                if not data:
-                    print("暂无会议数据")
-                    return
+    async def status(self):
+        response = await self.call("agent/cli/device/status")
+        print(response.json())
 
-                # print(f"\n{'会议ID':<38} {'会议标题':<20} {'会议时长':<8} {'会议语言':<6} {'会议日期':<12}")
+        # try:
+        #
+        # except Exception as e:
+        #     # log.error(e)
+        #     print("status: ",e)
+        #     exit()
+        # return None
 
-                table = Texttable()
-                table.header(["会议ID", "会议标题", "会议时长", "会议语言", "会议日期"])
-                table.set_cols_width([36, 80, 8, 8, 19])
+    async def list(self,range =None):
+        url = "agent/cli/meeting/list"
+        try:
+            if range in ['today','week','month','quarterly','year']:
+                url = f"agent/cli/meeting/list/{range}"
+            response = await self.call(url)
+                # 用 tqdm 显示加载状态
+                # for _ in tqdm(range(1), ncols=20, desc="加载中"):
 
-                for item in data:
-                    meeting_id = item.get("id", "")
-                    title = item.get("title", "")
-                    duration = item.get("duration", "") or "-"
-                    language = item.get("language", "") or "-"
-                    ctime = item.get("ctime", "").replace("T", " ")
-                    # ctime = ctime_str[:10] if ctime_str else "-"
-                    table.add_row([meeting_id, title, duration, language, ctime])
-                print(r"""
-  _____   _            _   _       _       _
- | ____| | |   ___  __| | | | ___ | | __ _| | __
- |  _|   | |  / _ \/ _` | | |/ _ \| |/ _` | |/ /
- | |___  | | |  __/ (_| | | | (_) | | (_| |   <
- |_____| |_|  \___|\__,_| |_|\___/|_|\__,_|_|\_\                
-                """)
-                print(f"{table.draw()}")
-                print(f"\n共 {len(data)} 条会议")
-                print("-" * 80)
-                print(f"您可以使用 elastolink-cli -d <会议ID> 查看会议内容")
+
+
+            data = response.json()
+
+            if not data:
+                print("暂无会议数据")
+                return
+
+            # print(f"\n{'会议ID':<38} {'会议标题':<20} {'会议时长':<8} {'会议语言':<6} {'会议日期':<12}")
+
+            table = Texttable()
+            table.header(["会议ID", "会议标题", "会议时长", "会议语言", "会议日期"])
+            table.set_cols_width([36, 80, 8, 8, 19])
+
+            for item in data:
+                meeting_id = item.get("id", "")
+                title = item.get("title", "")
+                duration = item.get("duration", "") or "-"
+                language = item.get("language", "") or "-"
+                ctime = item.get("ctime", "").replace("T", " ")
+                # ctime = ctime_str[:10] if ctime_str else "-"
+                table.add_row([meeting_id, title, duration, language, ctime])
+            print(r"""
+_____   _            _   _       _       _
+| ____| | |   ___  __| | | | ___ | | __ _| | __
+|  _|   | |  / _ \/ _` | | |/ _ \| |/ _` | |/ /
+| |___  | | |  __/ (_| | | | (_) | | (_| |   <
+|_____| |_|  \___|\__,_| |_|\___/|_|\__,_|_|\_\                
+            """)
+            print(f"{table.draw()}")
+            print(f"\n共 {len(data)} 条会议")
+            print("-" * 80)
+            print(f"您可以使用 elastolink-cli -d <会议ID> 查看会议内容，更多关于命令用法请参考 https://pypi.org/project/elastolink/")
         except Exception as e:
             print(f"获取会议列表失败: {e}")
 
     async def detail(self, meeting_id: str):
         try:
-            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
-                response = await client.get(f"agent/cli/meeting/detail?id={meeting_id}")
-                if response.status_code != 200:
-                    self.log.warning(f"{response.status_code}, {response.text}")
-                    return
+            response = await self.call(f"agent/cli/meeting/detail?id={meeting_id}")
+            content = response.text
 
-                content = response.text
+            if not content:
+                print("暂无会议详情")
+                return
 
-                if not content:
-                    print("暂无会议详情")
-                    return
-
-                print(content)
+            print(content)
         except Exception as e:
             print(f"获取会议详情失败: {e}")
 
     async def markdown(self, meeting_id: str):
         try:
+            response = await self.call(f"agent/cli/document/markdown?id={meeting_id}")
+            content = response.text
 
-            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
-                response = await client.get(f"agent/cli/document/markdown?id={meeting_id}")
-                if response.status_code != 200:
-                    self.log.warning(f"{response.status_code}, {response.text}")
-                    return
+            if not content:
+                print("暂无 Markdown 内容")
+                return
 
-                content = response.text
-
-                if not content:
-                    print("暂无 Markdown 内容")
-                    return
-
-                print(content)
+            print(content)
         except Exception as e:
             print(f"获取 Markdown 失败: {e}")
 
     async def office(self, meeting_id: str):
         try:
+            response = await self.call(f"agent/cli/document/office?id={meeting_id}")
+            content = response.text
 
-            async with httpx.AsyncClient(base_url=self.base_url, headers=self.headers(), timeout=30.0) as client:
-                response = await client.get(f"agent/cli/document/office?id={meeting_id}")
-                if response.status_code != 200:
-                    self.log.warning(f"{response.status_code}, {response.text}")
-                    return
+            if not content:
+                print("暂无 Office 文档")
+                return
 
-                content = response.text
-
-                if not content:
-                    print("暂无 Office 文档")
-                    return
-
-                print(content)
+            print(content)
         except Exception as e:
             print(f"获取 Office 文档失败: {e}")
     def search(self,path):
@@ -215,6 +239,16 @@ class Elastolink():
             await self.status()
         elif self.args.list:
             await self.list()
+        elif self.args.today:
+            await self.list('today')
+        elif self.args.week:
+            await self.list('week')
+        elif self.args.month:
+            await self.list('month')
+        elif self.args.quarterly:
+            await self.list('quarterly')
+        elif self.args.year:
+            await self.list('year')
         elif self.args.detail :
             await self.detail(self.args.detail)
         elif self.args.markdown:
